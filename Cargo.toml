@@ -1,0 +1,10 @@
+[package]
+name = "nbody"
+version = "0.1.0"
+authors = ["saethlin <kimockb@gmail.com>"]
+
+[dependencies]
+crunchy = "*"
+
+[profile.release]
+lto = true
