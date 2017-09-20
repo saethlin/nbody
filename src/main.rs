@@ -1,16 +1,11 @@
-#[macro_use]
-extern crate crunchy;
-
 use std::ops::{Add, Sub, Mul, AddAssign, SubAssign};
 use std::f64::consts::PI;
 
 const SOLAR_MASS: f64 = 4.0 * PI * PI;
 const YEAR: f64 = 365.24;
-const N_BODIES: usize = 5;
-const N: usize = 10;
 
 #[derive(Clone, Copy)]
-struct Vec3(pub f64, pub f64, pub f64, pub f64);
+struct Vec3(pub f64, pub f64, pub f64, f64);
 
 impl Vec3 {
     fn new() -> Self {
@@ -148,18 +143,16 @@ impl Planet {
 }
 
 fn offset_momentum(velocity: &mut [Vec3], mass: &[f64]) {
-    let total_momentum: Vec3 = velocity.iter().zip(mass.iter()).fold(
-        Vec3::new(),
-        |v, (vel, ma)| {
-            v + *vel * *ma
-        },
-    );
-    velocity[0] = total_momentum * (1.0 / mass[0]);
+    let total_momentum: Vec3 = velocity.iter().zip(mass.iter()).fold(Vec3::new(), |p,
+     (&vel, &ma)| {
+        p + (vel * ma)
+    });
+    velocity[0] = total_momentum * (-1.0 / mass[0]);
 }
 
 fn energy(position: &[Vec3], velocity: &[Vec3], mass: &[f64]) -> f64 {
     let mut energy = 0.0;
-    for i in 0..N_BODIES {
+    for i in 0..5 {
         energy += velocity[i].squared_norm() * mass[i] / 2.0 -
             mass[i] *
                 position
@@ -201,84 +194,56 @@ fn advance(position: &mut [Vec3], velocity: &mut [Vec3], mass: &[f64], dt: f64) 
         m += 1;
     }
 
-    let i = 4;
-    for j in 5..5 {
-        r[m] = position[i] - position[j];
-        m += 1;
-    }
-    unroll!{
-    for m in 0..10 {
-        let d2 = r[m].0.powi(2) + r[m].1.powi(2) + r[m].2.powi(2);
-        let mut distance = 1.0 / d2.sqrt();
-        distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-        mag[m] = dt * distance.powi(3);        
-    }
-    }
-    /*
-    let d2 = r[0].0.powi(2) + r[0].1.powi(2) + r[0].2.powi(2);
+    let d2 = r[0].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[0] = dt * distance.powi(3);
 
-    let d2 = r[1].0.powi(2) + r[1].1.powi(2) + r[1].2.powi(2);
+    let d2 = r[1].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[1] = dt * distance.powi(3);
 
-    let d2 = r[2].0.powi(2) + r[2].1.powi(2) + r[2].2.powi(2);
+    let d2 = r[2].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[2] = dt * distance.powi(3);
 
-    let d2 = r[3].0.powi(2) + r[3].1.powi(2) + r[3].2.powi(2);
+    let d2 = r[3].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[3] = dt * distance.powi(3);
 
-    let d2 = r[4].0.powi(2) + r[4].1.powi(2) + r[4].2.powi(2);
+    let d2 = r[4].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[4] = dt * distance.powi(3);
 
-    let d2 = r[5].0.powi(2) + r[5].1.powi(2) + r[5].2.powi(2);
+    let d2 = r[5].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[5] = dt * distance.powi(3);
 
-    let d2 = r[6].0.powi(2) + r[6].1.powi(2) + r[6].2.powi(2);
+    let d2 = r[6].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[6] = dt * distance.powi(3);
 
-    let d2 = r[7].0.powi(2) + r[7].1.powi(2) + r[7].2.powi(2);
+    let d2 = r[7].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[7] = dt * distance.powi(3);
 
-    let d2 = r[8].0.powi(2) + r[8].1.powi(2) + r[8].2.powi(2);
+    let d2 = r[8].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[8] = dt * distance.powi(3);
 
-    let d2 = r[9].0.powi(2) + r[9].1.powi(2) + r[9].2.powi(2);
+    let d2 = r[9].squared_norm();
     let mut distance = 1.0 / d2.sqrt();
     distance = distance * (1.5 - 0.5 * d2 * distance * distance);
     mag[9] = dt * distance.powi(3);
-    */
 
-    m = 0;
-    unroll!{
-    for i in 0..5 {
-        for j in 1 + i..5 {
-            let tmp = r[m] * mag[m];
-            velocity[i] -= tmp * mass[j];
-            velocity[j] += tmp * mass[i];
-            m += 1;
-        }
-    }
-    }
-
-    /*
     m = 0;
     let i = 0;
     for j in 1..5 {
@@ -304,13 +269,6 @@ fn advance(position: &mut [Vec3], velocity: &mut [Vec3], mass: &[f64], dt: f64) 
         velocity[j] += r[m] * mass[i] * mag[m];
         m += 1;
     }
-    let i = 4;
-    for j in 5..5 {
-        velocity[i] -= r[m] * mass[j] * mag[m];
-        velocity[j] += r[m] * mass[i] * mag[m];
-        m += 1;
-    }
-    */
 
     position[0] += velocity[0] * dt;
     position[1] += velocity[1] * dt;
