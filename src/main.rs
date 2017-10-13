@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate crunchy;
 use std::ops::{Add, Sub, Mul, AddAssign, SubAssign};
 use std::f64::consts::PI;
 
@@ -170,111 +172,40 @@ fn advance(position: &mut [Vec3], velocity: &mut [Vec3], mass: &[f64], dt: f64) 
     let mut mag = [0.0; 10];
 
     let mut m = 0;
-    let i = 0;
-    for j in 1..5 {
-        r[m] = position[i] - position[j];
-        m += 1;
+    unroll! {
+        for i in 0..5 {
+            for j in i + 1..5 {
+                r[m] = position[i] - position[j];
+                m += 1;
+            }
+        }
     }
 
-    let i = 1;
-    for j in 2..5 {
-        r[m] = position[i] - position[j];
-        m += 1;
+    unroll!{
+        for m in 0..10 {
+            let d2 = r[m].squared_norm();
+            let mut distance = 1.0 / d2.sqrt();
+            distance = distance * (1.5 - 0.5 * d2 * distance * distance);
+            mag[m] = dt * distance.powi(3);
+        }
     }
-
-    let i = 2;
-    for j in 3..5 {
-        r[m] = position[i] - position[j];
-        m += 1;
-    }
-
-    let i = 3;
-    for j in 4..5 {
-        r[m] = position[i] - position[j];
-        m += 1;
-    }
-
-    let d2 = r[0].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[0] = dt * distance.powi(3);
-
-    let d2 = r[1].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[1] = dt * distance.powi(3);
-
-    let d2 = r[2].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[2] = dt * distance.powi(3);
-
-    let d2 = r[3].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[3] = dt * distance.powi(3);
-
-    let d2 = r[4].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[4] = dt * distance.powi(3);
-
-    let d2 = r[5].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[5] = dt * distance.powi(3);
-
-    let d2 = r[6].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[6] = dt * distance.powi(3);
-
-    let d2 = r[7].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[7] = dt * distance.powi(3);
-
-    let d2 = r[8].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[8] = dt * distance.powi(3);
-
-    let d2 = r[9].squared_norm();
-    let mut distance = 1.0 / d2.sqrt();
-    distance = distance * (1.5 - 0.5 * d2 * distance * distance);
-    mag[9] = dt * distance.powi(3);
 
     m = 0;
-    let i = 0;
-    for j in 1..5 {
-        velocity[i] -= r[m] * mass[j] * mag[m];
-        velocity[j] += r[m] * mass[i] * mag[m];
-        m += 1;
-    }
-    let i = 1;
-    for j in 2..5 {
-        velocity[i] -= r[m] * mass[j] * mag[m];
-        velocity[j] += r[m] * mass[i] * mag[m];
-        m += 1;
-    }
-    let i = 2;
-    for j in 3..5 {
-        velocity[i] -= r[m] * mass[j] * mag[m];
-        velocity[j] += r[m] * mass[i] * mag[m];
-        m += 1;
-    }
-    let i = 3;
-    for j in 4..5 {
-        velocity[i] -= r[m] * mass[j] * mag[m];
-        velocity[j] += r[m] * mass[i] * mag[m];
-        m += 1;
+    unroll! {
+        for i in 0..5 {
+            for j in i + 1..5 {
+                velocity[i] -= r[m] * mass[j] * mag[m];
+                velocity[j] += r[m] * mass[i] * mag[m];
+                m += 1;
+            }
+        }
     }
 
-    position[0] += velocity[0] * dt;
-    position[1] += velocity[1] * dt;
-    position[2] += velocity[2] * dt;
-    position[3] += velocity[3] * dt;
-    position[4] += velocity[4] * dt;
+    unroll!{
+        for m in 0..5 {
+            position[m] += velocity[m] * dt;
+        }
+    }
 }
 
 fn main() {
